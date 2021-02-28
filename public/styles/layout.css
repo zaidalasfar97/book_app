@@ -1,0 +1,14 @@
+div{
+    margin: 20px;
+    border: 1px solid black;
+    margin-bottom: 60px;
+}
+div *{
+
+    text-align: center;
+}
+div img{
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
