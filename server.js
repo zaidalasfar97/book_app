@@ -3,7 +3,11 @@ const express = require("express");
 const { get } = require("superagent");
 const su = require("superagent")
 const app = express();
+const pg = require("pg")
+
 require("dotenv").config()
+const client = new pg.Client(process.env.DATABASE_URL)
+
 app.use(express.static('./public'));
 
 app.set('view engine', 'ejs')
@@ -13,17 +17,49 @@ const Port = process.env.PORT || 2000
 app.use(express.urlencoded({ extended: true }));
 app.listen(Port, () => {
     console.log(`listening on ${Port}`)
-
 })
+client.connect()
 app.get('/', homePage)
 app.post('/searches', getData)
 app.get('/searches/new', newSearch)
-// app.get('/searches/show', showData)
-let bookValues = [];
-// function showData(req, res) {
+app.get(`/books/:id`, getBookID)
+app.post(`/books`, saveData)
 
-//     res.render("pages/searches/show", { Data: bookValues })
-// }
+function saveData(req, res) {
+    let Image = req.body.image_url
+
+    let Title = req.body.title
+
+    let Description = req.body.description
+
+    let Author = req.body.author
+
+    let ISBN = req.body.isbn
+
+    let sql = `INSERT INTO books(author,title,isbn,image_url,description) VALUES ($1,$2,$3,$4,$5) RETURNING *;`;
+
+    let values = [Author, Title, ISBN, Image, Description]
+
+
+
+    client.query(sql, values)
+        .then((result) => {
+
+            res.render('pages/books/detail', { bookDetail: result.rows[0] })
+            // console.log(result.rows);
+        })
+
+}
+function getBookID(req, res) {
+
+    let SQL = `SELECT * from books WHERE id=$1;`;
+    let value = [req.params.id]
+    client.query(SQL, value).then(result => {
+
+        res.render('pages/books/detail', { bookDetail: result.rows[0] })
+    })
+
+}
 
 
 function getData(req, res) {
@@ -41,11 +77,14 @@ function getData(req, res) {
     su.get(url)
         .then((result) => {
             let boolImage;
+            let boolIsbn;
+            //  let boolIsbm;
             // res.send(result.body.items[4].volumeInfo);
 
             let itemsARR = result.body.items.map(function (elem, idx) {
                 //    r.push(elem.volumeInfo.title)
-
+                // console.log(typeof elem.volumeInfo.industryIdentifiers);
+                //    console.log(elem.volumeInfo.industryIdentifiers[0].identifier);
                 if (typeof elem.volumeInfo.imageLinks == "undefined") {
                     // console.log("false");
                     boolImage = false;
@@ -53,15 +92,25 @@ function getData(req, res) {
                     boolImage = true
                     // console.log("true");
                 }
+                //////////////////////////////////////////////////////
+                if (typeof elem.volumeInfo.industryIdentifiers == "undefined") {
+                    // console.log("false");
+                    boolIsbn = false;
+                } else {
+                    boolIsbn = true
+                    // console.log("true");
+                }
 
-                return new Book(elem, boolImage)
+
+
+                return new Book(elem, boolImage, boolIsbn)
 
 
 
 
             })
 
-            // console.log(itemsARR.imageURL);
+            // console.log(itemsARR.isbn);
             res.render("pages/searches/show", { Data: itemsARR })
 
 
@@ -77,22 +126,48 @@ function newSearch(req, res) {
 
 
 function homePage(req, res) {
-    res.render("pages/index")
+
+    let sql = 'select * from books;'
+    client.query(sql).then(result => {
+        let numberPage;
+        numberPage = result.rows[result.rows.length - 1].id;
+
+
+        res.render("pages/index",
+            {
+                data: result.rows,
+                numberOfBooks: numberPage
+            })
+    })
+
 
 }
 
-function Book(data, image) {
+function Book(data, image, isbn) {
     if (image == false) {
         // console.log("dd");
-        this.imageURL = "https://i.imgur.com/J5LVHEL.jpg"
+        this.image_url = "https://i.imgur.com/J5LVHEL.jpg"
 
     } else if (image) {
-        // console.log("LL");
-        this.imageURL = data.volumeInfo.imageLinks.smallThumbnail
-    }
-    this.bookTitle = data.volumeInfo.title || "There Is No Title"
-    this.authorName = data.volumeInfo.authors || "There Is No Author"
 
+        this.image_url = data.volumeInfo.imageLinks.smallThumbnail
+    }
+    ///////////////////////////////
+    if (isbn == false) {
+        this.isbn = "There Is No ISBN"
+
+    } else if (isbn) {
+
+        this.isbn = data.volumeInfo.industryIdentifiers[0].type + " " + data.volumeInfo.industryIdentifiers[0].identifier
+    }
+    // 
+    // this.isbn =data.volumeInfo.industryIdentifiers[0] || "There Is No ISBN"
+
+
+    this.title = data.volumeInfo.title || "There Is No Title"
+    this.author = data.volumeInfo.authors || "There Is No Author"
     this.description = data.volumeInfo.description || "There Is No Description"
+    this.bookshelf = data.volumeInfo.categories || "there is no category"
+
 
 }

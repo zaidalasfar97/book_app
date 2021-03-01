@@ -6,10 +6,13 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <link rel="stylesheet" href="../../layout/header.ejs">
 </head>
 
 <body>
-    <header></header>
+    
+    <%- include('../../layout/header.ejs') %>
+    
     <main>
         <form action="/searches" method="POST">
             <label for="q"></label>
@@ -23,7 +26,7 @@
 
         </form>
     </main>
-    <footer></footer>
+    <%- include('../../layout/footer.ejs') %>
 
 </body>
 
