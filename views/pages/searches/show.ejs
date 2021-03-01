@@ -8,13 +8,23 @@
     <link rel="stylesheet" href="/style/layout.css">
 </head>
 <body>
+    <%- include('../../layout/header.ejs') %>
 
     <% Data.forEach(element => { %>
   <div>
- <img src="<%=element.imageURL%>" alt="">
-        <p>  <%= element.bookTitle%></p>
-        <p>  <%= element.authorName%></p>
+ <img src="<%=element.image_url%>" alt="">
+        <p>  <%= element.title%></p>
+        <p>  <%= element.author%></p>
         <p>  <%= element.description%></p>
+     <form action='/books' method="POST" type="hidden">
+        <!-- <input type="text" id="custId" name="custId" value="3487"> -->
+    <input type="hidden" name="title" value="<%=element.title  %> ">
+    <input type="hidden" name="author" value="<%=element.author  %> ">
+    <input type="hidden" name="description" value="<%=element.description  %> ">
+    <input type="hidden" name="image_url" value="<%=element.image_url  %> ">
+    <input type="hidden" name="isbn" value="<%=element.isbn  %> ">
+<button>save</button>
+    </form>
     </div>
         <!-- this.imageURL=data.volumeInfo.imageLinks.thumbnail || "https://i.imgur.com/J5LVHEL.jpg"
         this.bookTitle=data.volumeInfo.title|| "There Is No Title"
@@ -22,5 +32,6 @@
         this.description=data.volumeInfo.description || "There Is No Description"
          -->
     <% }) %>
+    <%- include('../../layout/footer.ejs') %>
 </body>
 </html>
