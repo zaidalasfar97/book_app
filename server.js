@@ -3,7 +3,8 @@ const express = require("express");
 const { get } = require("superagent");
 const su = require("superagent")
 const app = express();
-const pg = require("pg")
+const pg = require("pg");
+const methodOverride = require('method-override');
 
 require("dotenv").config()
 // const client = new pg.Client(process.env.DATABASE_URL);
@@ -11,20 +12,43 @@ const client = new pg.Client({ connectionString: process.env.DATABASE_URL, ssl: 
 
 app.use(express.static('./public'));
 
-app.set('view engine', 'ejs')
+app.set('view engine', 'ejs');
+app.use(methodOverride('_method'));
 
 
 const Port = process.env.PORT || 2000
 app.use(express.urlencoded({ extended: true }));
 app.listen(Port, () => {
-    console.log(`listening on ${Port}`)
+    console.log(`listening on ${Port}`);
 })
 client.connect()
-app.get('/', homePage)
-app.post('/searches', getData)
-app.get('/searches/new', newSearch)
-app.get(`/books/:id`, getBookID)
-app.post(`/books`, saveData)
+app.get('/', homePage);
+app.post('/searches', getData);
+app.get('/searches/new', newSearch);
+app.get(`/books/:id`, getBookID);
+app.post(`/books`, saveData);
+app.put('/updatebooks/:id', updateDetalis);
+app.delete('/deletebooks/:id', deleteHandler);
+
+function deleteHandler(req, res) {
+    let SQL = `DELETE FROM books WHERE id=$1`;
+    let value = [req.params.id];
+    client.query(SQL, value)
+        .then(() => {
+            res.redirect('/');
+        })
+}
+
+function updateDetalis(req, res) {
+    let { author, title, isbn, image_url, description } = req.body;
+    let SQL = `UPDATE books SET author=$1,title=$2,isbn=$3,image_url=$4,description=$5 WHERE id=$6;`;
+    let values = [author, title, isbn, image_url, description, req.params.id];
+    client.query(SQL, values)
+        .then(() => {
+            res.redirect(`/books/${req.params.id}`);
+
+        })
+}
 
 function saveData(req, res) {
     let Image = req.body.image_url
@@ -132,7 +156,7 @@ function homePage(req, res) {
     client.query(sql).then(result => {
         let numberPage;
         numberPage = result.rows[result.rows.length - 1].id;
-
+        // console.log(result.rows);
 
         res.render("pages/index",
             {
@@ -143,6 +167,7 @@ function homePage(req, res) {
 
 
 }
+
 
 function Book(data, image, isbn) {
     if (image == false) {
